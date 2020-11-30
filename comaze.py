@@ -130,14 +130,20 @@ class PairingCoMaze:
       print("Game lost (" + game["state"]["lostMessage"] + ").")
     return game["state"]
 
-
-
 def pairing_two(Alice, Bob):
-  game_id = PairingCoMaze().play_new_game()
-  alice_won = Alice.play_existing_game({"game_id":game_id})
-  bob_won = Bob.play_existing_game({"game_id":game_id})
-  assert not(alice_won)==bob_won
-  return alice_won, bob_won
+  level = 1
+  alice_perf = []
+  bob_perf = []
+  while level<5:
+    game_id = PairingCoMaze().play_new_game({'level': level})
+    alice_won = Alice.play_existing_game({"game_id":game_id})
+    bob_won = Bob.play_existing_game({"game_id":game_id})
+    assert not(alice_won)==bob_won
+    alice_perf.append(alice_won)
+    bob_perf.append(bob_won)
+    level += 1
+    
+  return alice_perf, bob_perf
 
 
 def round_robin(agents):
@@ -152,3 +158,14 @@ def round_robin(agents):
       saving_states[agent2.id].append((agent1.id, won_2))
 
   return saving_states
+
+#def evaluation(saving_states):
+#  scores = {}
+#  for agent, performances in saving_states.items():
+#    scores[agent]  = 0
+
+
+if __name__ == "__main__":
+    alice = PairingCoMaze()
+    bob = PairingCoMaze()
+    pairing_two(alice, bob)
