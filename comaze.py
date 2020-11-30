@@ -159,13 +159,10 @@ def round_robin(agents):
 
   return saving_states
 
-#def evaluation(saving_states):
-#  scores = {}
-#  for agent, performances in saving_states.items():
-#    scores[agent]  = 0
-
-
-if __name__ == "__main__":
-    alice = PairingCoMaze()
-    bob = PairingCoMaze()
-    pairing_two(alice, bob)
+def evaluation(saving_states):
+  scores = {}
+  for agent, performances in saving_states.items():
+    scores[agent]  = 0
+    for level, perf in enumerate(performances[1]):
+      scores[agent]+=perf*(level+1)
+  return scores
