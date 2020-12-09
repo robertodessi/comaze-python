@@ -48,7 +48,7 @@ class CoMaze:
         time.sleep(3)
         continue
 
-      while game["currentPlayer"]["uuid"] != player["uuid"]:
+      if game["currentPlayer"]["uuid"] != player["uuid"]:
         print(f"Not my turn. Waiting. (should be {game['currentPlayer']['uuid']}, but I am {player['uuid']}")
         print("We have used " + str(game["usedMoves"]) + " moves so far.")
         time.sleep(0.5)
