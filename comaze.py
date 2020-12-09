@@ -23,6 +23,7 @@ class CoMaze:
     self.play_existing_game(options)
 
   def play_existing_game(self, options={}):
+    print("playing existing game", options)
     if "look_for_player_name" in options:
       options["game_id"] = requests.get(self.API_URL + "/game/byPlayerName?playerName=" + options["look_for_player_name"]).json()["uuid"]
 
@@ -42,14 +43,15 @@ class CoMaze:
     while not game["state"]["over"]:
       game = requests.get(self.API_URL + "/game/" + game_id).json()
 
-      if not game["state"]["started"]:
+      while not game["state"]["started"]:
         print("Waiting for players. (Invite someone: " + self.WEBAPP_URL + "/?gameId=" + game_id + ")")
         time.sleep(3)
         continue
 
-      if game["currentPlayer"]["uuid"] != player["uuid"]:
-        print("Not my turn. Waiting.")
-        time.sleep(1)
+      while game["currentPlayer"]["uuid"] != player["uuid"]:
+        print(f"Not my turn. Waiting. (should be {game['currentPlayer']['uuid']}, but I am {player['uuid']}")
+        print("We have used " + str(game["usedMoves"]) + " moves so far.")
+        time.sleep(0.5)
         continue
 
       next_move = self.next_move(game, player)
@@ -60,10 +62,10 @@ class CoMaze:
       if type(next_move) == str:
         action = next_move
       elif type(next_move) == dict:
-        action = next_move.get("direction")
+        action = next_move.get("action")
         symbol_message = next_move.get("symbol_message")
 
-      print("Moving " + action)
+      print("Moving " + str(action))
       request_url = self.API_URL + "/game/" + game_id + "/move"
       request_url += "?playerId=" + player["uuid"]
       request_url += "&action=" + action
@@ -102,6 +104,7 @@ class PairingCoMaze:
     return game_id
 
   def play_existing_game(self, options={}):
+    print("playing", options)
     if "look_for_player_name" in options:
       options["game_id"] = requests.get(self.API_URL + "/game/byPlayerName?playerName=" + options["look_for_player_name"]).json()["uuid"]
 
