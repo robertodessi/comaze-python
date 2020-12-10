@@ -73,7 +73,6 @@ def pair_agents(task):
     alice = agent1.player()
     bob = agent2.player()
 
-
     with ThreadPool(2) as p:
         p.map(play, ((alice, opts_alice), (bob, opts_bob)))
         p.close()
@@ -99,7 +98,7 @@ def pair_all_agents(players: List[Agent]):
                 agent1 = players[idx_agent1]
                 agent2 = players[idx_agent2]
 
-                tuple_tasks.append([agent1, agent2, level])
+                tuple_tasks.append((agent1, agent2, level))
 
     threads = min(len(tuple_tasks), 36)    
     with Pool(threads) as p:
@@ -109,9 +108,10 @@ def pair_all_agents(players: List[Agent]):
 
     for task, game_result in zip(tuple_tasks, games_result):
         agent1, agent2, level = task
+        level = int(level)
         game_won, game_id = game_result
 
-        game_result = GameResult(agent1.id, agent2.id, int(level), game_won, game_id)
+        game_result = GameResult(agent1.id, agent2.id, level, game_won, game_id)
         history_dict[agent1.id].append(game_result)
         history_dict[agent2.id].append(game_result)
 
