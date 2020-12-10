@@ -4,6 +4,7 @@ import pathlib
 import requests
 from collections import defaultdict, namedtuple
 from multiprocessing import Process
+from multiprocessing.pool import ThreadPool
 from typing import Any, Dict, List, NamedTuple, Union
 
 from comaze import CoMaze
@@ -46,7 +47,8 @@ def get_leaderboard(players: Dict[str, int]):
     return res
 
 
-def pair_agents(agent1, agent2, level: str = "1"):
+def pair_agents(task):
+    agent1, agent2, level = task
     assert level in ["1", "2", "3", "4"], "I cannot start a game with player {agent1}, {agen2} and level {level}"
 
     num_of_player_slots = "2"
@@ -88,6 +90,8 @@ def pair_all_agents(players: List[Agent]):
     for player in players:
         performance_dict[player.id] = 0
 
+    tuple_tasks  = []
+
     for level in ["1"]:  # TODO extend levels
         for idx_agent1 in range(len(players)-1):
             for idx_agent2 in range(idx_agent1+1, len(players)):
@@ -95,15 +99,23 @@ def pair_all_agents(players: List[Agent]):
                 agent1 = players[idx_agent1]
                 agent2 = players[idx_agent2]
 
-                game_won = pair_agents(agent1, agent2, level)
+                tuple_tasks.append([agent1, agent2, level])
 
-                game_result = GameResult(agent1.id, agent2.id, int(level), game_won)
-                history_dict[agent1.id].append(game_result)
-                history_dict[agent2.id].append(game_result)
+    threads = min(len(tuple_tasks), 36)    
+    with ThreadPool(threads) as p:
+        games_won = p.map(pair_agents, tuple_tasks)  
+        p.close()
+        p.join()
 
-                if game_won:
-                    performance_dict[agent1.id] += 1
-                    performance_dict[agent2.id] += 1
+    for task, game_won in zip(tuple_tasks, games_won):
+        agent1, agent2, level = task
+        game_result = GameResult(agent1.id, agent2.id, int(level), game_won)
+        history_dict[agent1.id].append(game_result)
+        history_dict[agent2.id].append(game_result)
+
+        if game_won:
+            performance_dict[agent1.id] += 1
+            performance_dict[agent2.id] += 1
 
     print(*get_leaderboard(performance_dict), sep="\n")
 
