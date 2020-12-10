@@ -37,6 +37,7 @@ class GameResult(NamedTuple):
     id2: str
     level: int
     game_won: bool
+    game_id: str
 
 
 def get_leaderboard(players: Dict[str, int]):
@@ -47,7 +48,7 @@ def get_leaderboard(players: Dict[str, int]):
     return res
 
 
-def pair_agents(task):
+def pair_agents(task) -> Union[bool, str]:
     agent1, agent2, level = task
     assert level in ["1", "2", "3", "4"], "I cannot start a game with player {agent1}, {agen2} and level {level}"
 
@@ -80,13 +81,13 @@ def pair_agents(task):
         p.join(timeout=120)
 
     game_won = requests.get(API_URL + "/game/" + game_id).json()['state']['won']
-    return game_won
+    return game_won, game_id
 
 
 def pair_all_agents(players: List[Agent]):
-    performance_dict = {}
     history_dict = defaultdict(list)
 
+    performance_dict = {}
     for player in players:
         performance_dict[player.id] = 0
 
@@ -101,21 +102,23 @@ def pair_all_agents(players: List[Agent]):
 
                 tuple_tasks.append([agent1, agent2, level])
 
-    threads = min(len(tuple_tasks), 36)    
+    threads = min(len(tuple_tasks), 36)
     with ThreadPool(threads) as p:
-        games_won = p.map(pair_agents, tuple_tasks)  
+        games_result = p.map(pair_agents, tuple_tasks)
         p.close()
         p.join()
 
-    for task, game_won in zip(tuple_tasks, games_won):
+    for task, game_result in zip(tuple_tasks, games_result):
         agent1, agent2, level = task
-        game_result = GameResult(agent1.id, agent2.id, int(level), game_won)
+        game_won, game_won = game_result
+
+        game_result = GameResult(agent1.id, agent2.id, int(level), game_won, game_id)
         history_dict[agent1.id].append(game_result)
         history_dict[agent2.id].append(game_result)
 
         if game_won:
-            performance_dict[agent1.id] += 1
-            performance_dict[agent2.id] += 1
+            performance_dict[agent1.id] += (1 * level)  # TODO smarter score assignment
+            performance_dict[agent2.id] += (1 * level)  # TODO smarter score assignment
 
     print(*get_leaderboard(performance_dict), sep="\n")
 

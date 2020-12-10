@@ -11,7 +11,7 @@ class CustomCoMaze(CoMaze):
     # This method is called whenever it is your turn
 
     print("Hi, my name is " + player["name"] + ".")
-    print("I can move " + player["actions"][0] + ", for example.")
+    print("I can move " + str(player["actions"]) + ", for example.")
     print("We have used " + str(game["usedMoves"]) + " moves so far.")
     print("There are " + str(len(game["unreachedGoals"])) + " goals left to reach.")
 
