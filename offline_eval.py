@@ -3,7 +3,7 @@ import importlib
 import pathlib
 import requests
 from collections import defaultdict, namedtuple
-from multiprocessing import Process
+from multiprocessing import Process, Pool
 from multiprocessing.pool import ThreadPool
 from typing import Any, Dict, List, NamedTuple, Union
 
@@ -47,9 +47,14 @@ def get_leaderboard(players: Dict[str, int]):
     return res
 
 
+def play(x):
+    agent, opts = x
+    return agent.play_existing_game(opts)
+
+
 def pair_agents(task):
     agent1, agent2, level = task
-    assert level in ["1", "2", "3", "4"], "I cannot start a game with player {agent1}, {agen2} and level {level}"
+    assert level in ["1", "2", "3", "4"], f"I cannot start a game with player {agent1}, {agent2} and level {level}"
 
     num_of_player_slots = "2"
     game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots).json()["uuid"]
@@ -67,18 +72,12 @@ def pair_agents(task):
     alice = agent1.player()
     bob = agent2.player()
 
-    run_alice = lambda: alice.play_existing_game(opts_alice)
-    run_bob = lambda: bob.play_existing_game(opts_bob)
 
-    jobs = []
-    for r in [run_alice, run_bob]:
-        p = Process(target=r)
-        p.start()
-        jobs.append(p)
-
-    for p in jobs:
-        p.join(timeout=120)
-
+    with ThreadPool(2) as p:
+        p.map(play, ((alice, opts_alice), (bob, opts_bob)))
+        p.close()
+        p.join()
+        
     game_won = requests.get(API_URL + "/game/" + game_id).json()['state']['won']
     return game_won
 
@@ -102,7 +101,7 @@ def pair_all_agents(players: List[Agent]):
                 tuple_tasks.append([agent1, agent2, level])
 
     threads = min(len(tuple_tasks), 36)    
-    with ThreadPool(threads) as p:
+    with Pool(threads) as p:
         games_won = p.map(pair_agents, tuple_tasks)  
         p.close()
         p.join()
