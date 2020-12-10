@@ -110,7 +110,7 @@ def pair_all_agents(players: List[Agent]):
 
     for task, game_result in zip(tuple_tasks, games_result):
         agent1, agent2, level = task
-        game_won, game_won = game_result
+        game_won, game_id = game_result
 
         game_result = GameResult(agent1.id, agent2.id, int(level), game_won, game_id)
         history_dict[agent1.id].append(game_result)
