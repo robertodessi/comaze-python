@@ -174,7 +174,7 @@ def load_agents(path: str) -> List[Agent]:
         player = torch.load(player_path)
         players.append(Agent(player_id, team_name, player))
 
-    assert len(players) > 1, "I could not load any agents from {args.path}"
+    assert len(players) > 1, f"I could not load any agents from {path}"
     return players
 
 
