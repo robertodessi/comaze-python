@@ -72,10 +72,28 @@ def make_move(agent, player, game):
     request_url += "&action=" + action
     if message:
         request_url += "&symbolMessage=" + message
-    requests.post(request_url)
+    
+    # Now, this is where it gets complicated:
+    # If the directional move proposed by the 
+    # player is making the agent trying to go
+    # out of the arena, then the folluwing will
+    # return a JSONError that will be dealt the 
+    # following way:
+    # The directional move is invalid but it is
+    # still the current player's turn, so we 
+    # make it "SKIP".
+    try:
+        new_game = requests.post(request_url).json()
+    except Exception as e:
+        #The agent is likely trying to move outside the arena.
+        # Regularising the resulting game state:
+        skip_request_url = API_URL + "/game/" + game_id + "/move"
+        skip_request_url += "?playerId=" + player_id
+        skip_request_url += "&action=SKIP"
+        new_game = requests.post(skip_request_url).json()
 
-    print(" We have used " + str(game["usedMoves"]) + " moves so far.")
-    print("There are " + str(len(game["unreachedGoals"])) + " goals left to reach.")
+    print(" We have used " + str(new_game["usedMoves"]) + " moves so far.")
+    print("There are " + str(len(new_game["unreachedGoals"])) + " goals left to reach.")
 
     return next_move
 
@@ -96,7 +114,8 @@ def play_one_game(agent1, agent2, game_id, agent1_name, agent2_name):
         logs[f'{agent1.id}_{agent1.team_name}'].append(agent1_next_move)
         if game["state"]["won"]:
             break
-
+        game = requests.get(API_URL + "/game/" + game_id).json()
+        
         agent2_next_move = make_move(agent2.player, player2, game)
         logs[f'{agent2.id}_{agent2.team_name}'].append(agent2_next_move)
         if game["state"]["won"]:
@@ -113,16 +132,6 @@ def play_one_game(agent1, agent2, game_id, agent1_name, agent2_name):
 
 
 def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
-    import signal
-    import time
-    start = time.time()
-    def timeout_handler():
-        print('worker time-outed after', time.time() - start)
-        exit(0)
-    signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(MAX_TIMEOUT)
-    # signal.SIGALRM will be sent in MAX_TIMEOUT seconds; handler will suicide the process by calling exit(0)
-
     agent1, agent2, level, rate = task
     assert level in ["1", "2", "3", "4"], f"I cannot start a game with player {agent1}, {agent2} and level {level}"
 
