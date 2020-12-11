@@ -185,10 +185,11 @@ def load_agents(path: str) -> List[Agent]:
         # assuming hyphen delimits id and team_name, it's a dot in reality
         player_id = player_filename.split('-')[0]
         team_name = player_filename.split('-')[1]
+        print(player_filename)
 
         try:
             print(f'Loading {player_id} agent from team {team_name} from path {player_filename}')
-            player = pickle.load(player_path)
+            player = pickle.load(open(player_path, 'rb'))
             players.append(Agent(player_id, team_name, player))
         except:
             print(f'cannot load agent from path {player_filename}')
