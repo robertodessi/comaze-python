@@ -10,6 +10,7 @@ from multiprocessing.pool import ThreadPool
 from typing import Any, Dict, List, NamedTuple, Union
 import torch
 import random
+from copy import deepcopy
 
 from comaze.agents import AbstractAgent
 #in the meantime:
@@ -163,6 +164,17 @@ def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
     pickle.dump(logs, open( f"logging/{game_id}.p", "wb" ) )    
     return game_won, game_id
 
+          
+def pair_two_agents_and_play_one_iterated_game(task) -> List[Union[bool, str]]:
+    levels = ["1", "2", "3", "4]
+    agent1, agent2, rate = task
+    results = []
+    for level in levels:
+        task = (agent1, agent2, level, rate)
+        game_won, game_id = pair_two_agents_and_play_one_game(task)
+        results.append( [game_won, game_id])
+    
+    return results
 
 def pair_all_agents_and_play_all_games(players: List[Agent]):
     history_dict = defaultdict(list)
@@ -171,7 +183,6 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
     for player in players:
         performance_dict[player.id] = 0
 
-    levels = ["1", "2", "3", "4"]
     tuple_tasks  = []
     # chosse randomly 'to_watch' instances with a actionRateLimit of 1 to show to participants
     nbr_games = int(len(levels) * ((len(players)*(len(players)-1))/2))
@@ -180,14 +191,13 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
     random.shuffle(games_rates)
 
     counter =  0
-    for level in levels:
-        for idx_agent1 in range(len(players)-1):
-            for idx_agent2 in range(idx_agent1+1, len(players)):
-                agent1 = players[idx_agent1]
-                agent2 = players[idx_agent2]
+    for idx_agent1 in range(len(players)-1):
+        for idx_agent2 in range(idx_agent1+1, len(players)):
+            agent1 = players[idx_agent1]
+            agent2 = players[idx_agent2]
 
-                tuple_tasks.append((agent1, agent2, level, games_rates[counter]))
-                counter += 1
+            tuple_tasks.append((deepcopy(agent1), deepcopy(agent2), games_rates[counter]))
+            counter += 1
 
     #threads = min(len(tuple_tasks), 36)
     #with Pool(threads) as p:
@@ -198,7 +208,7 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
     n_processes = min(len(tuple_tasks), MAX_PROCESSES)
     with Pool(n_processes) as p:
         callback = lambda _: print("worker died")
-        promised_games_result = [p.apply_async(pair_two_agents_and_play_one_game, (tuple_task,), error_callback=callback) for tuple_task in tuple_tasks]
+        promised_games_result = [p.apply_async(pair_two_agents_and_play_one_iterated_game, (tuple_task,), error_callback=callback) for tuple_task in tuple_tasks]
 
         games_result = []
         for promise in promised_games_result:
@@ -212,18 +222,19 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
         p.close()
         # p.join() # never returns if a worker is busy forever
 
-    for task, game_result in zip(tuple_tasks, games_result):
+    for task, game_results in zip(tuple_tasks, games_result):
         agent1, agent2, level, _ = task
         level = int(level)
-        game_won, game_id = game_result
+        for game_result in game_results:
+            game_won, game_id = game_result
 
-        game_result = GameResult(agent1.id, agent2.id, level, game_won, game_id)
-        history_dict[agent1.id].append(game_result)
-        history_dict[agent2.id].append(game_result)
+            game_result = GameResult(agent1.id, agent2.id, level, game_won, game_id)
+            history_dict[agent1.id].append(game_result)
+            history_dict[agent2.id].append(game_result)
 
-        if game_won:
-            performance_dict[agent1.id] += (1 * level)  # TODO smarter score assignment
-            performance_dict[agent2.id] += (1 * level)  # TODO smarter score assignment
+            if game_won:
+                performance_dict[agent1.id] += (1 * level)  # TODO smarter score assignment
+                performance_dict[agent2.id] += (1 * level)  # TODO smarter score assignment
 
     print(*get_leaderboard(performance_dict), sep="\n")
 
