@@ -154,7 +154,7 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
     with Pool(threads) as p:
         games_result = p.map(pair_two_agents_and_play_one_game, tuple_tasks)
         p.close()
-        p.join()
+        p.join(timeout=240)
 
     for task, game_result in zip(tuple_tasks, games_result):
         agent1, agent2, level = task
