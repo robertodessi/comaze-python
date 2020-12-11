@@ -8,8 +8,10 @@ from multiprocessing import Process, Pool
 from multiprocessing.pool import ThreadPool
 from typing import Any, Dict, List, NamedTuple, Union
 
-from comaze import CoMaze
-
+#in other PR:
+#from comaze.agents import AbstractAgent
+#in the meantime:
+AbstractAgent = object
 
 API_URL = "http://teamwork.vs.uni-kassel.de:16216"
 WEBAPP_URL = "http://teamwork.vs.uni-kassel.de"
@@ -29,7 +31,7 @@ def parse_args():
 class Agent(NamedTuple):
     id: str
     team_name: str
-    player: CoMaze
+    player: AbstractAgent
 
 
 class GameResult(NamedTuple):
@@ -56,9 +58,9 @@ def make_move(agent, player, game):
     game_id = game["uuid"]
     player_id = player["uuid"]
 
-    next_move = agent.next_move(game, player)  # this will be a call to Angelos et al's stuff
-    action = next_move.get("action")
-    message = next_move.get("symbol_message")
+    next_move = agent.select_move(game)  # this will be a call to Angelos et al's stuff
+    action = next_move.get("direction")
+    message = next_move.get("symbol_Message")
 
     print("Moving " + action)
     request_url = API_URL + "/game/" + game_id + "/move"
@@ -156,19 +158,19 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
 
 def load_agents(path: str) -> List[Agent]:
     players = []
-    for player_code_path in pathlib.Path(path).glob('*.py'):
-        player_code_path = str(player_code_path.with_suffix('')).replace('/', '.')
+    for player_path in pathlib.Path(path).glob('*.player'):
+        player_filename = str(player_path.with_suffix('')).replace('/', '.')
 
         # TODO fix filenames in agent/ and make sure we split bases on dots rather than hyphens
         # TODO an agent name now also contains its dot-separated absolute path
         # a simple player_name.split(".")[-1] would do it but can't test it now
 
         # assuming hyphen delimits id and team_name, it's a dot in reality
-        player_id = player_code_path.split('-')[0]
-        team_name = player_code_path.split('-')[1]
+        player_id = player_filename.split('-')[0]
+        team_name = player_filename.split('-')[1]
         print(f'Loading {player_id} agent from team {team_name} from path {player_code_path}')
 
-        player = importlib.import_module(player_code_path).CustomCoMaze
+        player = torch.load(player_path)
         players.append(Agent(player_id, team_name, player))
 
     assert len(players) > 1, "I could not load any agents from {args.path}"
