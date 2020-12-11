@@ -10,10 +10,9 @@ from typing import Any, Dict, List, NamedTuple, Union
 import torch
 import random
 
-#in other PR:
-#from comaze.agents import AbstractAgent
+from comaze.agents import AbstractAgent
 #in the meantime:
-AbstractAgent = object
+#AbstractAgent = object
 
 API_URL = "http://teamwork.vs.uni-kassel.de:16216"
 WEBAPP_URL = "http://teamwork.vs.uni-kassel.de"
@@ -134,9 +133,9 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
 
     levels = ["1"]
     tuple_tasks  = []
-    # chosse randomly 4 instances with a actionRateLimit of 1 to show to participants
+    # chosse randomly 'to_watch' instances with a actionRateLimit of 1 to show to participants
     nbr_games = len(levels) * ((len(players)*(len(players)-1))/2)
-    to_watch = 4
+    to_watch = 0
     games_rates = [0]*(nbr_games-to_watch) + [1]*to_watch
     random.shuffle(games_rates)
 
