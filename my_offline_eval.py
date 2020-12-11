@@ -184,10 +184,13 @@ def load_agents(path: str) -> List[Agent]:
         # assuming hyphen delimits id and team_name, it's a dot in reality
         player_id = player_filename.split('-')[0]
         team_name = player_filename.split('-')[1]
-        print(f'Loading {player_id} agent from team {team_name} from path {player_filename}')
 
-        player = torch.load(player_path)
-        players.append(Agent(player_id, team_name, player))
+        try:
+            print(f'Loading {player_id} agent from team {team_name} from path {player_filename}')
+            player = torch.load(player_path)
+            players.append(Agent(player_id, team_name, player))
+        except:
+            print(f'cannot load agent from path {player_filename}')
 
     assert len(players) > 1, f"I could not load any agents from {path}"
     return players
