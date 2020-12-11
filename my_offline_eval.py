@@ -18,6 +18,8 @@ from comaze.agents import AbstractAgent
 API_URL = "http://teamwork.vs.uni-kassel.de:16216"
 WEBAPP_URL = "http://teamwork.vs.uni-kassel.de"
 
+MAX_TIMEOUT = 3 * 60 # seconds
+MAX_PROCESSES = 100
 """
 TODOs
 
@@ -150,11 +152,28 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
                 tuple_tasks.append((agent1, agent2, level, games_rates[counter]))
                 counter += 1
 
-    threads = min(len(tuple_tasks), 36)
-    with Pool(threads) as p:
-        games_result = p.map(pair_two_agents_and_play_one_game, tuple_tasks)
+    #threads = min(len(tuple_tasks), 36)
+    #with Pool(threads) as p:
+    #    games_result = p.map(pair_two_agents_and_play_one_game, tuple_tasks)
+    #    p.close()
+    #    p.join()
+
+    n_processes = min(len(tuple_tasks), MAX_PROCESSES)
+    with Pool(n_processes) as p:
+        callback = lambda _: print("worker died")
+        promised_games_result = [p.apply_async(pair_two_agents_and_play_one_game, (tuple_task,), error_callback=callback) for tuple_task in tuple_tasks]
+
+        games_result = []
+        for promise in promised_games_result:
+            try:
+                result = promise.get(timeout=MAX_TIMEOUT)
+                games_result.append(result)
+            except TimeoutError:
+                games_result.append((False, "<unknown-game-id:timeout>"))
+            except:
+                games_result.append((False, "<unknown-game-id:died>"))
         p.close()
-        p.join()
+        # p.join() # never returns if a worker is busy forever
 
 
     for task, game_result in zip(tuple_tasks, games_result):
