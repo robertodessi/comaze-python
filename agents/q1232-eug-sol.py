@@ -1,7 +1,7 @@
 import requests
 import random
 
-exec(requests.get('http://teamwork.vs.uni-kassel.de/comaze.py').text)
+#exec(requests.get('http://teamwork.vs.uni-kassel.de/comaze.py').text)
 exec(open("comaze.py").read())  # for local development. remove this line in colab notebook.
 
 
@@ -11,9 +11,9 @@ class CustomCoMaze(CoMaze):
     # This method is called whenever it is your turn
 
     print("Hi, my name is " + player["name"] + ".")
-    print("I can move " + player["actions"][0] + ", for example.")
-    print("We have used " + str(game["usedMoves"]) + " moves so far.")
-    print("There are " + str(len(game["unreachedGoals"])) + " goals left to reach.")
+    print("I can move " + str(player["actions"]) + ", for example.")
+    #print("We have used " + str(game["usedMoves"]) + " moves so far.")
+    #print("There are " + str(len(game["unreachedGoals"])) + " goals left to reach.")
 
     # Use the information contained in the dicts "game" and "player" to determine your next move
 
