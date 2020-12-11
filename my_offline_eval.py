@@ -88,8 +88,9 @@ def play_one_game(agent1, agent2, game_id, agent1_name, agent2_name):
 
     game = requests.get(API_URL + "/game/" + game_id).json()
     assert game["state"]["started"], f"Couldn't start game {game_id}"
-
+    counter = 0
     while not game["state"]["over"]:
+        counter  += 1
         agent1_next_move = make_move(agent1, player1, game)
         logs[player1["uuid"]].append(agent1_next_move)
         if game["state"]["won"]:
@@ -106,7 +107,9 @@ def play_one_game(agent1, agent2, game_id, agent1_name, agent2_name):
         print("Game won!")
     elif game["state"]["lost"]:
         print("Game lost (" + game["state"]["lostMessage"] + ").")
-
+    print('*'*10)
+    print('number of moves ', counter)
+    print('*'*10)
     return logs
 
 
@@ -163,11 +166,12 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
                 counter += 1
 
     threads = min(len(tuple_tasks), 36)
-    with Pool(threads) as p:
-        games_result = p.map(pair_two_agents_and_play_one_game, tuple_tasks)
-        p.close()
-        p.join()   
-    
+    #with Pool(threads) as p:
+    #    games_result = p.map(pair_two_agents_and_play_one_game, tuple_tasks)
+    #    p.close()
+    #    p.join()   
+    games_result = pair_two_agents_and_play_one_game(tuple_tasks[0])
+
     for task, game_result in zip(tuple_tasks, games_result):
         agent1, agent2, level, _ = task
         level = int(level)
