@@ -77,6 +77,8 @@ def make_move(agent, player, game):
     print(" We have used " + str(game["usedMoves"]) + " moves so far.")
     print("There are " + str(len(game["unreachedGoals"])) + " goals left to reach.")
 
+    return next_move
+
 
 def play_one_game(agent1, agent2, game_id, agent1_name, agent2_name):
     player1 = requests.post(API_URL + "/game/" + game_id + "/attend?playerName=" + agent1_name).json()
@@ -84,14 +86,19 @@ def play_one_game(agent1, agent2, game_id, agent1_name, agent2_name):
     print(f'Player1 id: {player1["uuid"]} joined game {game_id}')
     print(f'Player2 id: {player2["uuid"]} joined game {game_id}')
 
+    logs = defaultdict(list)
+
     game = requests.get(API_URL + "/game/" + game_id).json()
     assert game["state"]["started"], f"Couldn't start game {game_id}"
+
     while not game["state"]["over"]:
-        make_move(agent1, player1, game)
+        agent1_next_move = make_move(agent1, player1, game)
+        logs[player1["uuid"]].append(agent1_next_move)
         if game["state"]["won"]:
             break
 
-        make_move(agent2, player2, game)
+        agent2_next_move = make_move(agent2, player2, game)
+        logs[player2["uuid"]].append(agent2_next_move)
         if game["state"]["won"]:
             break
 
@@ -101,6 +108,8 @@ def play_one_game(agent1, agent2, game_id, agent1_name, agent2_name):
         print("Game won!")
     elif game["state"]["lost"]:
         print("Game lost (" + game["state"]["lostMessage"] + ").")
+
+    return logs
 
 
 def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
@@ -115,15 +124,18 @@ def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
         path_ids_towatch.close()
 
     else:
-        game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots).json()["uuid"]
+        game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots).json()["uuid"] 
 
     # instantiate classes
     alice = agent1.player
     bob = agent2.player
 
-    play_one_game(alice, bob, game_id, 'alice', 'bob')
+    logs = play_one_game(alice, bob, game_id, 'alice', 'bob')
 
     game_won = requests.get(API_URL + "/game/" + game_id).json()['state']['won']
+
+    # save logs
+    pickle.dump(logs, open( f"logging/{game_id}.p", "wb" ) )    
     return game_won, game_id
 
 
@@ -174,7 +186,6 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
                 games_result.append((False, "<unknown-game-id:died>"))
         p.close()
         # p.join() # never returns if a worker is busy forever
-
 
     for task, game_result in zip(tuple_tasks, games_result):
         agent1, agent2, level, _ = task
