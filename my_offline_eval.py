@@ -101,7 +101,7 @@ def play_one_game(agent1, agent2, game_id, agent1_name, agent2_name):
 
 def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
     agent1, agent2, level = task
-    assert level in ["1", "2", "3", "4"], "I cannot start a game with player {agent1}, {agent2} and level {level}"
+    assert level in ["1", "2", "3", "4"], f"I cannot start a game with player {agent1}, {agent2} and level {level}"
 
     num_of_player_slots = "2"
     game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots).json()["uuid"]
