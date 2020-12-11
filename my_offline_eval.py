@@ -2,6 +2,7 @@ import argparse
 import importlib
 import pathlib
 import requests
+import pickle
 import time
 from collections import defaultdict, namedtuple
 from multiprocessing import Process, Pool
@@ -187,7 +188,7 @@ def load_agents(path: str) -> List[Agent]:
 
         try:
             print(f'Loading {player_id} agent from team {team_name} from path {player_filename}')
-            player = torch.load(player_path)
+            player = pickle.load(player_path)
             players.append(Agent(player_id, team_name, player))
         except:
             print(f'cannot load agent from path {player_filename}')
