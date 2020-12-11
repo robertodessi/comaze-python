@@ -90,13 +90,13 @@ def play_one_game(agent1, agent2, game_id, agent1_name, agent2_name):
     assert game["state"]["started"], f"Couldn't start game {game_id}"
 
     while not game["state"]["over"]:
-        agent1_next_move = make_move(agent1, player1, game)
-        logs[player1["uuid"]].append(agent1_next_move)
+        agent1_next_move = make_move(agent1.player, player1, game)
+        logs[f'{agent1.id}_{agent1.team_name}'].append(agent1_next_move)
         if game["state"]["won"]:
             break
 
-        agent2_next_move = make_move(agent2, player2, game)
-        logs[player2["uuid"]].append(agent2_next_move)
+        agent2_next_move = make_move(agent2.player, player2, game)
+        logs[f'{agent2.id}_{agent2.team_name}'].append(agent2_next_move)
         if game["state"]["won"]:
             break
 
@@ -124,11 +124,7 @@ def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
     else:
         game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots).json()["uuid"] 
 
-    # instantiate classes
-    alice = agent1.player
-    bob = agent2.player
-
-    logs = play_one_game(alice, bob, game_id, 'alice', 'bob')
+    logs = play_one_game(agent1, agent2, game_id, 'alice', 'bob')
 
     game_won = requests.get(API_URL + "/game/" + game_id).json()['state']['won']
 
