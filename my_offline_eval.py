@@ -113,6 +113,16 @@ def play_one_game(agent1, agent2, game_id, agent1_name, agent2_name):
 
 
 def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
+    import signal
+    import time
+    start = time.time()
+    def timeout_handler():
+        print('worker time-outed after', time.time() - start)
+        exit(0)
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(MAX_TIMEOUT)
+    # signal.SIGALRM will be sent in MAX_TIMEOUT seconds; handler will suicide the process by calling exit(0)
+
     agent1, agent2, level, rate = task
     assert level in ["1", "2", "3", "4"], f"I cannot start a game with player {agent1}, {agent2} and level {level}"
 
