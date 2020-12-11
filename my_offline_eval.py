@@ -8,6 +8,7 @@ from multiprocessing import Process, Pool
 from multiprocessing.pool import ThreadPool
 from typing import Any, Dict, List, NamedTuple, Union
 import torch
+import random
 
 #in other PR:
 #from comaze.agents import AbstractAgent
@@ -101,11 +102,18 @@ def play_one_game(agent1, agent2, game_id, agent1_name, agent2_name):
 
 
 def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
-    agent1, agent2, level = task
+    agent1, agent2, level, rate = task
     assert level in ["1", "2", "3", "4"], f"I cannot start a game with player {agent1}, {agent2} and level {level}"
 
     num_of_player_slots = "2"
-    game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots).json()["uuid"]
+    if rate == 1:
+        game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots +  "&actionRateLimit="  + rate).json()["uuid"]
+        path_ids_towatch = open(r'path_ids_towatch.txt','a') 
+        path_ids_towatch.write(game_id)
+        path_ids_towatch.close()
+
+    else:
+        game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots).json()["uuid"]
 
     # instantiate classes
     alice = agent1.player()
@@ -124,16 +132,24 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
     for player in players:
         performance_dict[player.id] = 0
 
+    levels = ["1"]
     tuple_tasks  = []
+    # chosse randomly 4 instances with a actionRateLimit of 1 to show to participants
+    nbr_games = len(levels) * ((len(players)*(len(players)-1))/2)
+    to_watch = 4
+    games_rates = [0]*(nbr_games-to_watch) + [1]*to_watch
+    random.shuffle(games_rates)
 
-    for level in ["1"]:  # TODO extend levels
+    counter =  0
+    for level in levels:  # TODO extend levels
         for idx_agent1 in range(len(players)-1):
             for idx_agent2 in range(idx_agent1+1, len(players)):
+                counter += 1
 
                 agent1 = players[idx_agent1]
                 agent2 = players[idx_agent2]
 
-                tuple_tasks.append((agent1, agent2, level))
+                tuple_tasks.append((agent1, agent2, level, games_rates[counter]))
 
     threads = min(len(tuple_tasks), 36)
     with Pool(threads) as p:
