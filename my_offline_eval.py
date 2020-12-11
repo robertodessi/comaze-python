@@ -107,7 +107,7 @@ def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
 
     num_of_player_slots = "2"
     if rate == 1:
-        game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots +  "&actionRateLimit="  + rate).json()["uuid"]
+        game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots +  "&actionRateLimit="  + str(rate)).json()["uuid"]
         path_ids_towatch = open(r'path_ids_towatch.txt','a') 
         path_ids_towatch.write(game_id)
         path_ids_towatch.close()
@@ -135,8 +135,8 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
     levels = ["1"]
     tuple_tasks  = []
     # chosse randomly 'to_watch' instances with a actionRateLimit of 1 to show to participants
-    nbr_games = len(levels) * ((len(players)*(len(players)-1))/2)
-    to_watch = 0
+    nbr_games = int(len(levels) * ((len(players)*(len(players)-1))/2))
+    to_watch = 4
     games_rates = [0]*(nbr_games-to_watch) + [1]*to_watch
     random.shuffle(games_rates)
 
@@ -144,12 +144,11 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
     for level in levels:  # TODO extend levels
         for idx_agent1 in range(len(players)-1):
             for idx_agent2 in range(idx_agent1+1, len(players)):
-                counter += 1
-
                 agent1 = players[idx_agent1]
                 agent2 = players[idx_agent2]
 
                 tuple_tasks.append((agent1, agent2, level, games_rates[counter]))
+                counter += 1
 
     threads = min(len(tuple_tasks), 36)
     with Pool(threads) as p:
