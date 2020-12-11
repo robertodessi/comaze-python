@@ -116,8 +116,8 @@ def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
         game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots).json()["uuid"]
 
     # instantiate classes
-    alice = agent1.player()
-    bob = agent2.player()
+    alice = agent1.player
+    bob = agent2.player
 
     play_one_game(alice, bob, game_id, 'alice', 'bob')
 
@@ -132,7 +132,7 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
     for player in players:
         performance_dict[player.id] = 0
 
-    levels = ["1"]
+    levels = ["1", "2", "3", "4"]
     tuple_tasks  = []
     # chosse randomly 'to_watch' instances with a actionRateLimit of 1 to show to participants
     nbr_games = int(len(levels) * ((len(players)*(len(players)-1))/2))
@@ -141,7 +141,7 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
     random.shuffle(games_rates)
 
     counter =  0
-    for level in levels:  # TODO extend levels
+    for level in levels:
         for idx_agent1 in range(len(players)-1):
             for idx_agent2 in range(idx_agent1+1, len(players)):
                 agent1 = players[idx_agent1]
@@ -154,10 +154,11 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
     with Pool(threads) as p:
         games_result = p.map(pair_two_agents_and_play_one_game, tuple_tasks)
         p.close()
-        p.join(timeout=240)
+        p.join()
+
 
     for task, game_result in zip(tuple_tasks, games_result):
-        agent1, agent2, level = task
+        agent1, agent2, level, _ = task
         level = int(level)
         game_won, game_id = game_result
 
@@ -201,6 +202,10 @@ def main():
     args = parse_args()
     players = load_agents(args.path)
     pair_all_agents_and_play_all_games(players)
+
+    open(r'path_ids_towatch.txt','w').close() # erase file contents as all games ended
+
+
 
 
 if __name__ == '__main__':
