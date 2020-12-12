@@ -25,6 +25,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", type=str, required=True)
     parser.add_argument("--debug", action='store_true')
+    parser.add_argument("--visitor", action='store_true', default=False)
     return parser.parse_args()
 
 
@@ -164,7 +165,7 @@ def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
     return game_won, game_id
 
 
-def pair_all_agents_and_play_all_games(players: List[Agent]):
+def pair_all_agents_and_play_all_games(players: List[Agent], visitor: bool = False):
     history_dict = defaultdict(list)
 
     performance_dict = {}
@@ -176,7 +177,10 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
     # chosse randomly 'to_watch' instances with a actionRateLimit of 1 to show to participants
     nbr_games = int(len(levels) * ((len(players)*(len(players)-1))/2))
     to_watch = 4
-    games_rates = [0]*(nbr_games-to_watch) + [1]*to_watch
+    if visitor:
+        games_rates = [0]*(nbr_games-to_watch) + [1]*to_watch
+    else:
+        games_rates = [0]*(nbr_games)
     random.shuffle(games_rates)
 
     counter = 0
@@ -262,7 +266,7 @@ def main():
     logging_folder = pathlib.Path("logging")
     logging_folder.mkdir(exist_ok=True)
     players = load_agents(args.path)
-    pair_all_agents_and_play_all_games(players)
+    pair_all_agents_and_play_all_games(players, args.visitor)
 
     open(r'path_ids_towatch.txt','w').close() # erase file contents as all games ended
 
