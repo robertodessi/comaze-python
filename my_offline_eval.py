@@ -58,9 +58,9 @@ def make_move(agent, player, game):
     game_id = game["uuid"]
     player_id = player["uuid"]
 
-    next_move = agent.select_action(game)  # this will be a call to Angelos et al's stuff
+    next_move = agent.select_move(game)  # this will be a call to Angelos et al's stuff
     action = next_move.get("direction")
-    message = next_move.get("symbol_Message")
+    message = next_move.get("message")
 
     print("Moving " + action)
     request_url = API_URL + "/game/" + game_id + "/move"

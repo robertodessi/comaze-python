@@ -10,8 +10,8 @@ class MyAgent(AbstractAgent):
         return 'BB'
 
     def select_action(self, observation):
-        direction = self.actionId2action[random.randint(0, 4)]
-        symbol_message = self.id2token[random.randint(0, 10)]
+        direction = self.actionId2action[random.randint(0, 3)]
+        symbol_message = self.id2token[random.randint(0, 9)]
 
         return {
             "action": {"direction": direction},
