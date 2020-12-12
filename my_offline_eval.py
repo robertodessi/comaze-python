@@ -5,8 +5,7 @@ import requests
 import pickle
 import time
 from collections import defaultdict, namedtuple
-from multiprocessing import Process, Pool
-from multiprocessing.pool import ThreadPool
+from multiprocessing import Pool
 from typing import Any, Dict, List, NamedTuple, Union
 import torch
 import random
@@ -20,11 +19,6 @@ WEBAPP_URL = "http://teamwork.vs.uni-kassel.de"
 
 MAX_TIMEOUT = 10 * 60 # seconds
 MAX_PROCESSES = 100
-"""
-TODOs
-
-- implement debug/info msgs with python logging module
-"""
 
 def parse_args():
     parser = argparse.ArgumentParser()
