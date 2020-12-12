@@ -146,7 +146,7 @@ def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
         path_ids_towatch.write("\n")
         path_ids_towatch.close()
         print(game_id)
-        time.sleep(20)
+        #time.sleep(20)
 
     else:
         game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots).json()["uuid"]
@@ -228,8 +228,9 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
 
 
 def load_agents(path: str) -> List[Agent]:
+    breakpoint()
     players = []
-    for player_path in pathlib.Path(path).glob('*.player'):
+    for player_path in pathlib.Path(path).glob('*.py'):
         player_filename = str(player_path.with_suffix('')).replace('/', '.')
 
         player_id = player_filename.split('-')[0]
@@ -238,7 +239,8 @@ def load_agents(path: str) -> List[Agent]:
 
         try:
             print(f'Loading {player_id} agent from team {team_name} from path {player_filename}')
-            player = pickle.load(open(player_path, 'rb'))
+            player = importlib.import_module(player_filename).CustomCoMaze
+            #player = pickle.load(open(player_path, 'rb'))
             players.append(Agent(player_id, team_name, player))
         except:
             print(f'cannot load agent from path {player_filename}')
