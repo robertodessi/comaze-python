@@ -56,7 +56,7 @@ def make_move(agent, player, game):
     game_id = game["uuid"]
     player_id = player["uuid"]
 
-    next_move = agent.select_move(game)  # this will be a call to Angelos et al's stuff
+    next_move = agent.select_action(game)  # this will be a call to Angelos et al's stuff
     action = next_move.get("direction")
     message = next_move.get("symbol_Message")
 
@@ -103,6 +103,8 @@ def play_one_game(agent1, agent2, game_id, agent1_name, agent2_name):
     game = requests.get(API_URL + "/game/" + game_id).json()
     assert game["state"]["started"], f"Couldn't start game {game_id}"
 
+    agent1 = agent1()
+    agent2 = agent2()
     while not game["state"]["over"]:
         agent1_next_move = make_move(agent1, player1, game)
         logs[agent1_name].append(agent1_next_move)
@@ -228,7 +230,6 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
 
 
 def load_agents(path: str) -> List[Agent]:
-    breakpoint()
     players = []
     for player_path in pathlib.Path(path).glob('*.py'):
         player_filename = str(player_path.with_suffix('')).replace('/', '.')
@@ -239,7 +240,7 @@ def load_agents(path: str) -> List[Agent]:
 
         try:
             print(f'Loading {player_id} agent from team {team_name} from path {player_filename}')
-            player = importlib.import_module(player_filename).CustomCoMaze
+            player = importlib.import_module(player_filename).AbstractAgent
             #player = pickle.load(open(player_path, 'rb'))
             players.append(Agent(player_id, team_name, player))
         except:
