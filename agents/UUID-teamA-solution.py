@@ -3,7 +3,7 @@ import string
 from comaze.agents import AbstractAgent
 
 
-class CustomCoMaze(AbstractAgent):
+class MyAgent(AbstractAgent):
 
     @property
     def agent_id(self) -> str:

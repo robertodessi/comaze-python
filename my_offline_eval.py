@@ -19,10 +19,12 @@ WEBAPP_URL = "http://teamwork.vs.uni-kassel.de"
 
 MAX_TIMEOUT = 10 * 60 # seconds
 MAX_PROCESSES = 100
+DEBUG = False
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", type=str, required=True)
+    parser.add_argument("--debug", action='store_true')
     return parser.parse_args()
 
 
@@ -128,12 +130,12 @@ def play_one_game(agent1, agent2, game_id, agent1_name, agent2_name):
 
 
 def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
-
     import signal
     def timeout_handler():
         exit(0)
     signal.signal(signal.SIGALRM, timeout_handler)
-    signal.alarm(MAX_TIMEOUT)
+    if not DEBUG:
+        signal.alarm(MAX_TIMEOUT)
     # signal.SIGALRM will be sent in MAX_TIMEOUT seconds; handler will suicide the process by calling exit(0)
 
 
@@ -193,22 +195,25 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
     #    p.close()
     #    p.join()
 
-    n_processes = min(len(tuple_tasks), MAX_PROCESSES)
-    with Pool(n_processes) as p:
-        callback = lambda _: print("worker died")
-        promised_games_result = [p.apply_async(pair_two_agents_and_play_one_game, (tuple_task,), error_callback=callback) for tuple_task in tuple_tasks]
+    if DEBUG:
+        games_result = [pair_two_agents_and_play_one_game(tuple_task) for tuple_task in tuple_tasks]
+    else:
+        n_processes = min(len(tuple_tasks), MAX_PROCESSES)
+        with Pool(n_processes) as p:
+            callback = lambda _: print("worker died")
+            promised_games_result = [p.apply_async(pair_two_agents_and_play_one_game, (tuple_task,), error_callback=callback) for tuple_task in tuple_tasks]
 
-        games_result = []
-        for promise in promised_games_result:
-            try:
-                result = promise.get(timeout=MAX_TIMEOUT)
-                games_result.append(result)
-            except TimeoutError:
-                games_result.append((False, "<unknown-game-id:timeout>"))
-            except:
-                games_result.append((False, "<unknown-game-id:died>"))
-        p.close()
-        # p.join() # never returns if a worker is busy forever
+            games_result = []
+            for promise in promised_games_result:
+                try:
+                    result = promise.get(timeout=MAX_TIMEOUT)
+                    games_result.append(result)
+                except TimeoutError:
+                    games_result.append((False, "<unknown-game-id:timeout>"))
+                except:
+                    games_result.append((False, "<unknown-game-id:died>"))
+            p.close()
+            # p.join() # never returns if a worker is busy forever
 
     for task, game_result in zip(tuple_tasks, games_result):
         agent1, agent2, level, _ = task
@@ -240,7 +245,7 @@ def load_agents(path: str) -> List[Agent]:
 
         try:
             print(f'Loading {player_id} agent from team {team_name} from path {player_filename}')
-            player = importlib.import_module(player_filename).AbstractAgent
+            player = importlib.import_module(player_filename).MyAgent
             #player = pickle.load(open(player_path, 'rb'))
             players.append(Agent(player_id, team_name, player))
         except:
@@ -251,7 +256,9 @@ def load_agents(path: str) -> List[Agent]:
 
 
 def main():
+    global DEBUG
     args = parse_args()
+    if args.debug: DEBUG = True
     logging_folder = pathlib.Path("logging")
     logging_folder.mkdir(exist_ok=True)
     players = load_agents(args.path)
