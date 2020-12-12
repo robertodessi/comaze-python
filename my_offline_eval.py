@@ -151,7 +151,7 @@ def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
         path_ids_towatch.write("\n")
         path_ids_towatch.close()
         print(game_id)
-        #time.sleep(20)
+        time.sleep(30)
 
     else:
         game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots).json()["uuid"]
