@@ -147,20 +147,22 @@ def pair_two_agents_and_play_one_game(task) -> Union[bool, str]:
     num_of_player_slots = "2"
     if rate == 1:
         game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots +  "&actionRateLimit="  + str(rate)).json()["uuid"]
-        path_ids_towatch = open(r'path_ids_towatch.txt','a') 
+        path_ids_towatch = open(r'path_ids_towatch.txt','a')
         path_ids_towatch.write(game_id)
         path_ids_towatch.write("\n")
         path_ids_towatch.close()
+        print(game_id)
+        time.sleep(20)
 
     else:
-        game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots).json()["uuid"] 
+        game_id = requests.post(API_URL + "/game/create?level=" + level + "&numOfPlayerSlots=" + num_of_player_slots).json()["uuid"]
 
-    logs = play_one_game(agent1.player, agent2.player, game_id, f'{agent1.id}_{agent1.team_name}', f'{agent2.id}_{agent2.team_name}')
+    logs = play_one_game(agent1.player, agent2.player, game_id, f'{agent1.team_name}_{agent1.id.split(".")[-1]}', f'{agent2.team_name}_{agent2.id.split(".")[-1]}')
 
     game_won = requests.get(API_URL + "/game/" + game_id).json()['state']['won']
 
     # save logs
-    pickle.dump(logs, open( f"logging/{game_id}.p", "wb" ) )    
+    pickle.dump(logs, open( f"logging/{game_id}.p", "wb" ) )
     return game_won, game_id
 
 
@@ -179,7 +181,7 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
     games_rates = [0]*(nbr_games-to_watch) + [1]*to_watch
     random.shuffle(games_rates)
 
-    counter =  0
+    counter = 0
     for level in levels:
         for idx_agent1 in range(len(players)-1):
             for idx_agent2 in range(idx_agent1+1, len(players)):
@@ -222,9 +224,12 @@ def pair_all_agents_and_play_all_games(players: List[Agent]):
         history_dict[agent2.id].append(game_result)
 
         if game_won:
-            performance_dict[agent1.id] += (1 * level)  # TODO smarter score assignment
-            performance_dict[agent2.id] += (1 * level)  # TODO smarter score assignment
+            # final score is for 1 lev1, 3 for lev2, 5 for lev3, 7 for lev4
+            performance_dict[agent1.id] += ((level * 2) -1)
+            performance_dict[agent2.id] += ((level * 2) -1)
 
+    pickle.dump(performance_dict, open( f"logging/performance_{time.strftime('%Y_%m_%d_%H_%M_%S')}.dict", "wb" ) )
+    pickle.dump(history_dict, open( f"logging/history_{time.strftime('%Y_%m_%d_%H_%M_%S')}.dict", "wb" ) )
     print(*get_leaderboard(performance_dict), sep="\n")
 
 
@@ -233,11 +238,6 @@ def load_agents(path: str) -> List[Agent]:
     for player_path in pathlib.Path(path).glob('*.player'):
         player_filename = str(player_path.with_suffix('')).replace('/', '.')
 
-        # TODO fix filenames in agent/ and make sure we split bases on dots rather than hyphens
-        # TODO an agent name now also contains its dot-separated absolute path
-        # a simple player_name.split(".")[-1] would do it but can't test it now
-
-        # assuming hyphen delimits id and team_name, it's a dot in reality
         player_id = player_filename.split('-')[0]
         team_name = player_filename.split('-')[1]
         print(player_filename)
@@ -255,12 +255,12 @@ def load_agents(path: str) -> List[Agent]:
 
 def main():
     args = parse_args()
+    logging_folder = pathlib.Path("logging")
+    logging_folder.mkdir(exist_ok=True)
     players = load_agents(args.path)
     pair_all_agents_and_play_all_games(players)
 
     open(r'path_ids_towatch.txt','w').close() # erase file contents as all games ended
-
-
 
 
 if __name__ == '__main__':
